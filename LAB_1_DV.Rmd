@@ -1,0 +1,137 @@
+---
+title: "W203 Lab 1"
+author: "Daniel Volk"
+date: "May 20, 2017"
+output: pdf_document
+---
+
+## Introduction
+
+The goal of this exercise is to determine to what extent, if any, company performance is related to CEO salary. This question is not about establishing causality between CEO salary and company performance or the vice verca. Instead, we only intend to establish whether or not the two variables are related. 
+
+To do this we are going to use a cross-sectional dataset collected from a selection of 185 companies in 1990. We have been provided the following codebook:
+
+1. *salary*:  1990 compensation, $1000s
+2. *age*:     in years 
+3. *college*: =1 if attended college 
+4. *grad*:    =1 if attended graduate school 
+5. *comten*:  years with company 
+6. *ceoten*:  years as ceo with company 
+7. *proﬁts*:  1990 proﬁts, millions 
+8. *mktval*:  market value, end 1990, mills.
+
+It is important to note a few key features about this data. The data is cross-sectional, so we do not have a way of tracking performance or ceo salary over time. Instead we have to use the profits and market value of the company in the year 1990 to determine if there is a relationship. We also notice that two of our variables are categorical dummy variables. The variable *college* is 0 if the CEO did not receive a college degree and 1 if he or she did. Similarly, the variable *grad* is 0 when the CEO did not recieve a post-graduate degree and 1 when he or she did.
+
+Finally, there is some variability in units with this data. The *salary* variable is provided in 1000s while *profits* and *mktval* is provided in millions.
+
+## Setup
+
+We will start by loading the necessary libraries. In this case the `car` library gives us the `scatterplotMatrix` function which we can use to map bivariate correlations later on.
+
+```{r setup}
+knitr::opts_chunk$set(echo = TRUE)
+library(car)
+```
+
+We will also load the data which is in an RData format in our working directory. 
+
+```{r load}
+# clear all objects from the current environment
+rm(list=ls())
+
+# load the CEO dataset
+load("ceo_w203.RData")
+
+# change dataset name to lowercase
+ceo <- CEO
+rm(CEO)
+
+```
+
+## Data Selection
+
+Lets start by taking a basic look at the shape and data types that are in our dataframe. 
+
+```{r columns}
+# Find the rows and column sizes of the dataset respecitively
+dim(ceo)
+
+# Return the datatypes for each variable in the dataset.
+str(ceo)
+```
+
+We see that we have 185 observations of 8 variables. Also we can tell that the *college* and *grad* variables are coded as we would expect with 1's and 0's. Although, they are listed as numeric variables instead of factors. Before we go any further, let's explicitly change them to factors to avoid confusion.
+
+```{r factors}
+ceo$college <- factor(ceo$college,levels=c(0,1),labels=c("No College Degree","College Degree"))
+
+ceo$grad <- factor(ceo$grad,levels=c(0,1),labels=c("No Grad Degree","Grad Degree"))
+
+```
+
+Now lets take a look at a summary and a snapshot of our data.
+
+```{r summary}
+summary(ceo)
+head(ceo)
+```
+
+From this we can take note of a few things. First, we have 3 categories of variables. Both *grad* and *college* of them are, as mentioned before, categorical variables indicating a certain level of education attained. The second category consists of *age*, *comten*, and *ceoten*, each of which is indicative of some level of seniority. Finally, we have *salary*, *profits*, and *mktval*, which are all quantitative variables of company performance or ceo compensation. Specifically, we care about the relationships in the final category of variables. However, we must account for the potential impacts that the other variables may have on those relationships.
+
+## Cleaning the data
+
+One odd peculiarity of the data is the *mkval* variable has a minimum value of -1. This doesn't make logical sense as it would indicate the company is worth $-1 million if sold on the open market. Let's examine this phenomenon further.
+
+```{r missing}
+# return the rows where mktval == -1
+ceo[ceo$mktval==-1,]
+```
+
+We can see from the output above that there are actually 5 observations where this is the case. In the case of this dataset, it seems that -1 is how the missing values in the dataset are being coded. It is also the case that in each of these cases, *profits* is also -1. This indicates that when we are missing data on *mktval* we are also missing data for *profits*.
+
+Below we replace the -1s with NAs so R can handle them better.
+
+```{r setNAs}
+# -1 indicates missing in mktval and profits variables
+ceo$mktval[ceo$mktval==-1] <- NA
+ceo$profits[ceo$profits==-1] <- NA
+```
+
+Now that the missing values are replaced we should set the financial variables to all be on the same scale, that way there is no confusion comparing thousands of dollars in salary to millions of dollars in profit and market value. Below we put all financial variables on the millions scale by dividing salary by 1000.
+
+```{r rescale}
+ceo$salary <- ceo$salary/1000
+```
+
+## Create unskewed variables
+
+```{r unskew}
+# unskew salary and mktval variables
+ceo$log_sal <- log(ceo$salary)
+ceo$log_mkt <- log(ceo$mktval)
+
+# Profits has negative values and so it must be shifted over
+ceo$log_prof <- ceo$profits + abs(min(ceo$profits, na.rm=TRUE)) + 100
+ceo$log_prof <- log(ceo$log_prof)
+```
+
+## Duplicates
+
+```{r duplicates}
+# final 2 values look duplicated
+
+tail(ceo[order(as.numeric(row.names(ceo))),],2)
+
+# potentially synthesize rows into 1 with age value 31.5
+```
+
+## Plots
+
+```{r plotting}
+scatterplotMatrix(~salary + mktval + profits, data=ceo)
+scatterplotMatrix(~salary + profits + ceoten + comten + age, data=ceo)
+
+hist(ceo$salary, main="CEO Salary")
+hist(ceo$age, main="CEO Age")
+
+```
