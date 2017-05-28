@@ -11,60 +11,61 @@ knitr::opts_chunk$set(echo = TRUE)
 
 # Introduction
 
-## The data set
+This analysis is motivated by the following research question:
+
+> What is the relationship between CEO salary and company performance?
+
+Our data was provided with the following codebook:
+
+Variable Name | Variable Meaning
+------------- | ----------------
+salary        | 1990 compensation, $1000s
+age           | in years
+college       | =1 if attended college
+grad          | =1 if attended graduate school
+comten        | years with company
+ceoten        | years as CEO with company
+profits       | 1990 profits, millions
+mktval        | market value, end 1990, millions
+
+As we look at these variables, we need to define how we will measure company performance and consider possible limitations in this dataset.
+
+Our primary indicators of company performance will be profit and market value. However, there are several other factors than CEO salary that could influence a company's performance. For example:
+
+* Performance of the CEO's predecessor
+* Market environment of a company's industry or sector
+* Performance of executive team and employees
+* Influence from board of directors
+* Prior year profits
+
+To address some of these issues, we will also examine the length of the CEO's tenure. However, a lack of knowledge about external factors will prevent us from making any claims of causality.
+
+## Setup
+
+To begin our analysis, we used the `car` library and loaded the provided data set.
 
 ```{r}
-# Load required libraries and data frame to be studied; display first few rows of data frame.
 library(car)
 load("ceo_w203.RData")
-
 ```
 
-### First few rows
+We take an initial look at our data set.
 
 ```{r}
 head(CEO)
-```
-
-### Variables in the data
-
-```{r}
 names(CEO)
-```
-
-### Sample data
-
-```{r}
 str(CEO)
 ```
 
-Salary is measured in millions of \$, profits and market value (mktval) are measured in thousands of \$. Age, comten (years the CEO has been with the company) and ceoten (years as CEO with the company) are integer values. College (CEO attended college) and grad (CEO attended grad school) are dummy variables, where 1 indicates 'True'.
+There are 185 observations over 8 variables. We notice that `college` and `grad` are dummy variables. The rest of the variables are numeric. The `salary` variable is measured in millions of \$, `profits` and `mktval` are measured in thousands of \$. The `age`, `comten` (years the CEO has been with the company) and `ceoten` (years as CEO with the company) variables are integer values.
 
-### Descriptive statistics
+## Data Selection
+
+We summarize the data.
 
 ```{r}
 summary(CEO)
 ```
-
-### Summary
-
-We have two dummy variables, college and grad.
-
-## What to study
-
-How to measure performance?
-
-Hard to compare different companies, different sizes, different market situation. 
-
-High or low profit/market value may be caused by:
-- CEOs predecessor's (especially if CEO only recently took over)
-- market environment in the companies specific sector
-- other executives/employees performance/motivation
-- power limitation through board of directors
-- companies performance history (e.g. profit last year -100, profit this year -10) ==>  negative profit but possibly still good mangagement
-- ...
-
-# Data Cleansing
 
 It looks like -1 was used to indicate missing data in the mktval and the profits variable. Let's therefore replace -1 by NA:
 
