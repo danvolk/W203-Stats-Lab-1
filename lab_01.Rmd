@@ -339,4 +339,45 @@ scatterplotMatrix( ~ ceoten + comten + mktval + profits,
                    main = "Scatterplot Matrix Seniority")
 ```
 
+## Confounding Variables
+
+There may very well be a confounding variable effect taking place in the dataset. If we look again at the scatterplotMatrix below we can see that salary and mktval seem to be correlated. However, profits and mktval are also very highly correlated. 
+
+```{r}
+scatterplotMatrix(~salary + profits + mktval, data=CEO)
+```
+
+This could imply that mktval is a confounding variable. This would make intuitive sense as well because a company with a higher market value could frequently make higher profits than a company with a low market value. Similarly, a high market value company may decide to pay their CEO more money than a low market value company. In that way, marketvalue could be confounding the relationship between profits and salary and influencing a correlation which may not actually exist. 
+
+To get around this, we reduce the impact of mkval on profits by dividing profits by mktval. This should give us an intuitive variable that is the 1990 profits as a % of market value. As we can see from the histogram below, the variable is fairly normally distributed when profits are positive, with the negative profits observations being clear outliers. This can be seen more explicitly in the second histogram, where we are only looking at positive profit values.
+
+```{r}
+CEO$prof_perc <- CEO$profits/CEO$mktval
+hist(CEO$prof_perc,breaks=seq(-0.6,0.2,0.05),main="Histogram of Profits/Market-Value", xlab="Profits as a % of Market-Value")
+hist(CEO$prof_perc[CEO$profits>0],main="Histogram of Profits/Market-Value (only positive values)", xlab="Profits as a % of Market-Value")
+```
+
+To ensure that the transformation has worked correctly, we can compare the new *prof_perc* variable to the *mktval* and *profits* variables. 
+
+```{r}
+# scatterpot matrix of new prof_perc variable 
+scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO[CEO$profits>0,])
+cor(CEO$prof_perc, CEO$mktval,use="complete.obs")
+cor(CEO$prof_perc, CEO$profits,use="complete.obs")
+# scatterplot matrix and correlations without negative values
+scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO[CEO$profits>0,])
+cor(CEO$prof_perc[CEO$profits>0], CEO$mktval[CEO$profits>0],use="complete.obs")
+cor(CEO$prof_perc[CEO$profits>0], CEO$profits[CEO$profits>0],use="complete.obs")
+```
+
+Finally, we can compare the new *prof_perc* variable to a few of the variables in our dataset.
+
+```{r}
+# prof_perc vs other variables
+scatterplotMatrix(~prof_perc + ceoten + comten + salary + age,data=CEO)
+
+# prof_perc vs other variables with negative values removed
+scatterplotMatrix(~prof_perc + ceoten + comten + salary ,data=CEO[CEO$profits>0,])
+```
+
 
