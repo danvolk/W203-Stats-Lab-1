@@ -40,18 +40,18 @@ Our primary indicators of company performance will be profit and market value. H
 
 To address some of these issues, we will also examine the length of the CEO's tenure. However, a lack of knowledge about external factors will prevent us from making any claims of causality.
 
-## Setup
+# Setup
 
 To begin our analysis, we used the `car` library and loaded the provided data set.
 
-```{r}
+```{r setup_car}
 library(car)
 load("ceo_w203.RData")
 ```
 
 We take an initial look at our data set.
 
-```{r}
+```{r initial}
 head(CEO)
 names(CEO)
 str(CEO)
@@ -63,18 +63,18 @@ There are 185 observations over 8 variables. We notice that `college` and `grad`
 
 We summarize the data.
 
-```{r}
+```{r summary1}
 summary(CEO)
 ```
 
-It looks like -1 was used to indicate missing data in the mktval and the profits variable. Let's therefore replace -1 by NA:
+We notice that there is an unusual minimum, $-1$, for `mktval`. We determine that in both `mktval` and `profits`, these observations have missing data. We replace the $-1$s with `NA`.
 
-```{r}
+```{r replace_neg1}
 CEO$mktval[CEO$mktval==-1] <- NA
 CEO$profits[CEO$profits==-1] <- NA
 ```
 
-It looks like one row might be duplicated (row 184 and 185). All values - besides age - are identical. The same two rows are aso the only ones, that indicate, that the CEO atended graduate school, but not college! (Data inconsistency?) 
+By looking at the tail of our data, we also notice that row 184 and 185 might be duplicates. All values - besides age - are identical. These two rows are also the only rows that indicate that the CEO went to grad school but not college. It's possible that this data is inconsistent.
 
 ```{r duplicates}
 # final 2 values look duplicated
@@ -85,46 +85,50 @@ tail(CEO[order(as.numeric(row.names(CEO))),],2)
 ```
 
 
-# Univariate Analysis
+# Exploratory Analysis
 
-The Salary variable has outliers on the high end ==> Log Transformation!
+## Univariate Analysis
 
-```{r}
-hist(CEO$salary, breaks = 20, main = "Histogram of CEO salaries, in 1.000 $" , 
+First, we look at the histogram for `salary`.
+
+```{r salary_hist}
+hist(CEO$salary, breaks = 20, main = "Histogram of CEO salaries, in $1000s" , 
      xlab = NULL)
 ```
 
 
-## Profits
+We notice that the data is positively skewed and there are some large outliers.
 
-The profits variable has negative values and outliers at the high end ==> Log Transformation, possibly omitting the negative values...
+Next, we look at the histogram for `profits`.
 
-```{r}
+
+```{r profits_hist}
 hist(CEO$profits, breaks = 30, main = "Histogram of Company Profits, in million $" , 
      xlab = NULL)
 ```
 
-## Market Value
+The `profits` variable has both negative values and outliers at the high end.
 
-The Market Value variable has outliers on the high end ==> Log Transformation!
+Finally, we look at the histogram form `mktval`.
 
-```{r}
+```{r mktval_hist}
 hist(CEO$mktval, breaks = 20, main = "Histogram of Company Market Value, in million $" , 
      xlab = NULL)
 ```
 
+Again, we see large outliers in the `mktval` variable.
 
-## Tranformation
+Since all distributions are heavily skewed with outliers to the far right, we perform a logarithmic transformation. For the `profits` variable, we also have to consider omitting all values $<= 0$ in the transformation and then analysing those values seperately.
 
-Since all distributions are heavily skewed with outliers to the far right, a logarithmic transformation seems appropriate. For the profits variable we also have to consider omitting all values <= 0 in the transformation and then analysing those values seperately. It probably generally makes sense to assume, that there is a different kind of relationship between negative profits and the CEO salary, than between positive profits and the CEO salary.
-
-First let's check how many profits values actually are zero or negative
+First we check how many profits values actually are zero or negative.
 
 ```{r}
 sum(CEO$profits<=0, na.rm = TRUE)
 ```
 
-We would be omitting 10 values out of roughly 180, which is less than 6%.
+We would be omitting 10 values out of 185, which is less than 6% of our data.
+
+Next, we look at histograms for our log-transformed data.
 
 ```{r}
 CEO$log_salary  = log10(CEO$salary)
@@ -138,7 +142,7 @@ hist(CEO$log_mktval, breaks = 20)
 
 The negative profit values are transformed into NAs. 
 
-The transformed salary and profits variable resemble the normal distribution, while the market value variable still has a minor left skew, but no significant outliers. Logarithmic transformation reduces the skewness of all three variables. 
+The transformed `salary` and `profits` variables resemble the normal distribution. The `mktval` variable still has a minor left skew, but with no significant outliers.
 
 
 # Bivariate analysis
@@ -340,4 +344,63 @@ scatterplotMatrix( ~ ceoten + comten + mktval + profits,
                    main = "Scatterplot Matrix Seniority")
 ```
 
+## Confounding Variables
+
+There may very well be a confounding variable effect taking place in the dataset. If we look again at the scatterplotMatrix below we can see that salary and mktval seem to be correlated. However, profits and mktval are also very highly correlated. 
+
+```{r}
+scatterplotMatrix(~salary + profits + mktval, data=CEO)
+```
+
+This could imply that mktval is a confounding variable. This would make intuitive sense as well because a company with a higher market value could frequently make higher profits than a company with a low market value. Similarly, a high market value company may decide to pay their CEO more money than a low market value company. In that way, marketvalue could be confounding the relationship between profits and salary and influencing a correlation which may not actually exist. 
+
+To get around this, we reduce the impact of mkval on profits by dividing profits by mktval. This should give us an intuitive variable that is the 1990 profits as a % of market value. As we can see from the histogram below, the variable is fairly normally distributed when profits are positive, with the negative profits observations being clear outliers. This can be seen more explicitly in the second histogram, where we are only looking at positive profit values.
+
+```{r}
+CEO$prof_perc <- CEO$profits/CEO$mktval
+hist(CEO$prof_perc,breaks=seq(-0.6,0.2,0.05),main="Histogram of Profits/Market-Value", xlab="Profits as a % of Market-Value")
+hist(CEO$prof_perc[CEO$profits>0],main="Histogram of Profits/Market-Value (only positive values)", xlab="Profits as a % of Market-Value")
+```
+
+To ensure that the transformation has worked correctly, we can compare the new *prof_perc* variable to the *mktval* and *profits* variables. 
+
+```{r}
+# scatterpot matrix of new prof_perc variable 
+scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO,  
+                  smoother="",
+                  diagonal="histogram",
+                  main="Scatterplot Matrix CEO Salary")
+
+cor(CEO$prof_perc, CEO$mktval,use="complete.obs")
+cor(CEO$prof_perc, CEO$profits,use="complete.obs")
+# scatterplot matrix and correlations without negative values
+scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO[CEO$profits>0,],  
+                  smoother="",
+                  diagonal="histogram",
+                  main="Scatterplot Matrix CEO Salary")
+cor(CEO$prof_perc[CEO$profits>0], CEO$mktval[CEO$profits>0],use="complete.obs")
+cor(CEO$prof_perc[CEO$profits>0], CEO$profits[CEO$profits>0],use="complete.obs")
+```
+
+Finally, we can compare the new *prof_perc* variable to a few of the variables in our dataset.
+
+```{r}
+# prof_perc vs other variables
+scatterplotMatrix(~prof_perc + salary + ceoten + comten, data=CEO, 
+                  smoother="",
+                  diagonal="histogram",
+                  main="Scatterplot Matrix CEO Salary")
+
+# prof_perc vs other variables with negative values removed
+scatterplotMatrix(~prof_perc + ceoten + comten + salary ,data=CEO[CEO$profits>0,], 
+                  smoother="",
+                  diagonal="histogram",
+                  main="Scatterplot Matrix CEO Salary (Negative Profits Removed)")
+
+# correlation with and without negative values
+cor(CEO$prof_perc, CEO$salary, use="complete.obs")
+cor(CEO$prof_perc[CEO$profits>0], CEO$salary[CEO$profits>0], use="complete.obs")
+```
+
+The new variable *prof_perc* has little to no correlation with the salary variable. This could indicate, that once the effects of market-value are removed there is very little correlation between profit and salary. This would need to be addressed further in a more rigorous approach.
 
