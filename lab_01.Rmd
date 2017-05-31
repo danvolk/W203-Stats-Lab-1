@@ -280,14 +280,14 @@ Thus, we don't expect age to impact our primary analysis.
 
 Let's examine if there is a linear correlation between salary and education.
 
-Let's add both education variables to create one variable that indicates the CEOs overall education and check the correlation (does checking the correlation really make sense here?)
+We add the education variables together to create one variable that indicates overall education and check the correlation.
 
 ```{r}
 CEO$educ = CEO$college + CEO$grad
 cor(CEO$educ, CEO$salary)
 ```
 
-There seems to be no significant linear correlation. Let's look at the boxplots for all education levels.
+There is no notable linear correlation. Let's look at the boxplots for all education levels.
 
 ```{r}
 educ_bin = cut(CEO$educ, breaks = 3, labels = 
@@ -301,106 +301,109 @@ boxplot(salary ~ educ_bin, data = CEO,
         ylab = "salary in 1000 $s")
 ```
 
-Since there are only 5 data points of CEOs with no college education, the "No College" boxplot has no significance and shall not be discussed further. The other two boxplots reveal that there is only very little difference in the salary distribution between CEOs that attended College and those that attended Grad School.
+Since there are only 5 data points of CEOs with no college education, the "No College" boxplot has no significance and shall not be discussed further. The other two boxplots reveal that there is a very minor difference in the salary distribution between CEOs that attended college and those that attended grad school.
 
-## Seniority factor
+<!-- ## Seniority factor -->
 
-```{r}
-hist(CEO$ceoten)
-hist(CEO$comten)
-hist(log(CEO$ceoten))
-``` 
+<!-- ```{r} -->
+<!-- hist(CEO$ceoten) -->
+<!-- hist(CEO$comten) -->
+<!-- hist(log(CEO$ceoten)) -->
+<!-- ```  -->
 
-The ceoten variable (amount of years the CEO has been in office within the company) is skewed. Use transformation?????
+<!-- The ceoten variable (amount of years the CEO has been in office within the company) is skewed. Use transformation????? -->
 
-Finally, let's check out, if seniority and salary correlate in some way.
+<!-- Finally, let's check out, if seniority and salary correlate in some way. -->
 
-```{r}
-cor(CEO$comten, CEO$salary)
-cor(CEO$ceoten, CEO$salary)
+<!-- ```{r} -->
+<!-- cor(CEO$comten, CEO$salary) -->
+<!-- cor(CEO$ceoten, CEO$salary) -->
 
-CEO$log_ceoten = log(CEO$ceoten)
-CEO$log_ceoten[CEO$ceoten == 0] <- NA
+<!-- CEO$log_ceoten = log(CEO$ceoten) -->
+<!-- CEO$log_ceoten[CEO$ceoten == 0] <- NA -->
 
-cor(CEO$log_ceoten, CEO$log_salary, use = "complete.obs")
+<!-- cor(CEO$log_ceoten, CEO$log_salary, use = "complete.obs") -->
 
-```
+<!-- ``` -->
 
-```{r}
-scatterplotMatrix( ~ salary + log_salary + ceoten + log_ceoten + comten,  
-                   data = CEO, 
-#                 reg.line="" , 
-                   smoother="",
-                   diagonal = "histogram", 
-                   main = "Scatterplot Matrix Seniority")
-```
+<!-- ```{r} -->
+<!-- scatterplotMatrix( ~ salary + log_salary + ceoten + log_ceoten + comten,   -->
+<!--                    data = CEO,  -->
+<!-- #                 reg.line="" ,  -->
+<!--                    smoother="", -->
+<!--                    diagonal = "histogram",  -->
+<!--                    main = "Scatterplot Matrix Seniority") -->
+<!-- ``` -->
 
-```{r}
-scatterplotMatrix( ~ ceoten + comten + mktval + profits,  
-                   data = CEO, 
-#                 reg.line="" , 
-                   smoother="",
-                   diagonal = "histogram", 
-                   main = "Scatterplot Matrix Seniority")
-```
+<!-- ```{r} -->
+<!-- scatterplotMatrix( ~ ceoten + comten + mktval + profits,   -->
+<!--                    data = CEO,  -->
+<!-- #                 reg.line="" ,  -->
+<!--                    smoother="", -->
+<!--                    diagonal = "histogram",  -->
+<!--                    main = "Scatterplot Matrix Seniority") -->
+<!-- ``` -->
 
 ## Confounding Variables
 
-There may very well be a confounding variable effect taking place in the dataset. If we look again at the scatterplotMatrix below we can see that salary and mktval seem to be correlated. However, profits and mktval are also very highly correlated. 
+It is possible that there is a confounding variable effect in this dataset. If we look again at the scatterplot matrix for our primary variables, we can see that `salary` and `mktval` seem to be correlated. However, profits and mktval are also seem highly correlated.
 
 ```{r}
 scatterplotMatrix(~salary + profits + mktval, data=CEO)
 ```
 
-This could imply that mktval is a confounding variable. This would make intuitive sense as well because a company with a higher market value could frequently make higher profits than a company with a low market value. Similarly, a high market value company may decide to pay their CEO more money than a low market value company. In that way, marketvalue could be confounding the relationship between profits and salary and influencing a correlation which may not actually exist. 
+This relationship could imply that `mktval` is a confounding variable. It's reasonable that a company with a high market value posts larger profits than a company with a low market value. Similarly, a high market value company might decide to pay their CEO more money than a low market value company. In that way, market value could be confounding the relationship between profits and salary and producing a correlation that might not actually exist. This potential issue should be explored in a more rigorous analysis.
 
-To get around this, we reduce the impact of mkval on profits by dividing profits by mktval. This should give us an intuitive variable that is the 1990 profits as a % of market value. As we can see from the histogram below, the variable is fairly normally distributed when profits are positive, with the negative profits observations being clear outliers. This can be seen more explicitly in the second histogram, where we are only looking at positive profit values.
+<!-- To get around this, we reduce the impact of mkval on profits by dividing profits by mktval. This should give us an intuitive variable that is the 1990 profits as a % of market value. As we can see from the histogram below, the variable is fairly normally distributed when profits are positive, with the negative profits observations being clear outliers. This can be seen more explicitly in the second histogram, where we are only looking at positive profit values. -->
 
-```{r}
-CEO$prof_perc <- CEO$profits/CEO$mktval
-hist(CEO$prof_perc,breaks=seq(-0.6,0.2,0.05),main="Histogram of Profits/Market-Value", xlab="Profits as a % of Market-Value")
-hist(CEO$prof_perc[CEO$profits>0],main="Histogram of Profits/Market-Value (only positive values)", xlab="Profits as a % of Market-Value")
-```
+<!-- ```{r} -->
+<!-- CEO$prof_perc <- CEO$profits/CEO$mktval -->
+<!-- hist(CEO$prof_perc,breaks=seq(-0.6,0.2,0.05),main="Histogram of Profits/Market-Value", xlab="Profits as a % of Market-Value") -->
+<!-- hist(CEO$prof_perc[CEO$profits>0],main="Histogram of Profits/Market-Value (only positive values)", xlab="Profits as a % of Market-Value") -->
+<!-- ``` -->
 
-To ensure that the transformation has worked correctly, we can compare the new *prof_perc* variable to the *mktval* and *profits* variables. 
+<!-- To ensure that the transformation has worked correctly, we can compare the new *prof_perc* variable to the *mktval* and *profits* variables.  -->
 
-```{r}
-# scatterpot matrix of new prof_perc variable 
-scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO,  
-                  smoother="",
-                  diagonal="histogram",
-                  main="Scatterplot Matrix CEO Salary")
+<!-- ```{r} -->
+<!-- # scatterpot matrix of new prof_perc variable  -->
+<!-- scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO,   -->
+<!--                   smoother="", -->
+<!--                   diagonal="histogram", -->
+<!--                   main="Scatterplot Matrix CEO Salary") -->
 
-cor(CEO$prof_perc, CEO$mktval,use="complete.obs")
-cor(CEO$prof_perc, CEO$profits,use="complete.obs")
-# scatterplot matrix and correlations without negative values
-scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO[CEO$profits>0,],  
-                  smoother="",
-                  diagonal="histogram",
-                  main="Scatterplot Matrix CEO Salary")
-cor(CEO$prof_perc[CEO$profits>0], CEO$mktval[CEO$profits>0],use="complete.obs")
-cor(CEO$prof_perc[CEO$profits>0], CEO$profits[CEO$profits>0],use="complete.obs")
-```
+<!-- cor(CEO$prof_perc, CEO$mktval,use="complete.obs") -->
+<!-- cor(CEO$prof_perc, CEO$profits,use="complete.obs") -->
+<!-- # scatterplot matrix and correlations without negative values -->
+<!-- scatterplotMatrix(~prof_perc + profits + mktval ,data=CEO[CEO$profits>0,],   -->
+<!--                   smoother="", -->
+<!--                   diagonal="histogram", -->
+<!--                   main="Scatterplot Matrix CEO Salary") -->
+<!-- cor(CEO$prof_perc[CEO$profits>0], CEO$mktval[CEO$profits>0],use="complete.obs") -->
+<!-- cor(CEO$prof_perc[CEO$profits>0], CEO$profits[CEO$profits>0],use="complete.obs") -->
+<!-- ``` -->
 
-Finally, we can compare the new *prof_perc* variable to a few of the variables in our dataset.
+<!-- Finally, we can compare the new *prof_perc* variable to a few of the variables in our dataset. -->
 
-```{r}
-# prof_perc vs other variables
-scatterplotMatrix(~prof_perc + salary + ceoten + comten, data=CEO, 
-                  smoother="",
-                  diagonal="histogram",
-                  main="Scatterplot Matrix CEO Salary")
+<!-- ```{r} -->
+<!-- # prof_perc vs other variables -->
+<!-- scatterplotMatrix(~prof_perc + salary + ceoten + comten, data=CEO,  -->
+<!--                   smoother="", -->
+<!--                   diagonal="histogram", -->
+<!--                   main="Scatterplot Matrix CEO Salary") -->
 
-# prof_perc vs other variables with negative values removed
-scatterplotMatrix(~prof_perc + ceoten + comten + salary ,data=CEO[CEO$profits>0,], 
-                  smoother="",
-                  diagonal="histogram",
-                  main="Scatterplot Matrix CEO Salary (Negative Profits Removed)")
+<!-- # prof_perc vs other variables with negative values removed -->
+<!-- scatterplotMatrix(~prof_perc + ceoten + comten + salary ,data=CEO[CEO$profits>0,],  -->
+<!--                   smoother="", -->
+<!--                   diagonal="histogram", -->
+<!--                   main="Scatterplot Matrix CEO Salary (Negative Profits Removed)") -->
 
-# correlation with and without negative values
-cor(CEO$prof_perc, CEO$salary, use="complete.obs")
-cor(CEO$prof_perc[CEO$profits>0], CEO$salary[CEO$profits>0], use="complete.obs")
-```
+<!-- # correlation with and without negative values -->
+<!-- cor(CEO$prof_perc, CEO$salary, use="complete.obs") -->
+<!-- cor(CEO$prof_perc[CEO$profits>0], CEO$salary[CEO$profits>0], use="complete.obs") -->
+<!-- ``` -->
 
-The new variable *prof_perc* has little to no correlation with the salary variable. This could indicate, that once the effects of market-value are removed there is very little correlation between profit and salary. This would need to be addressed further in a more rigorous approach.
+<!-- The new variable *prof_perc* has little to no correlation with the salary variable. This could indicate, that once the effects of market-value are removed there is very little correlation between profit and salary. This would need to be addressed further in a more rigorous approach. -->
 
+# Discussion
+
+In our analysis, we uncovered several features of this dataset that could be useful for statistical modeling. We noticed an overall positive relationship between a CEO's salary and the company's profits and market value. As we learn more exploratory techniques, we can further tune this analysis to better account for issues like confounding variables.
