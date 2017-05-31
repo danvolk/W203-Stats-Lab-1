@@ -118,7 +118,7 @@ hist(CEO$mktval, breaks = 20, main = "Histogram of Company Market Value, in mill
 
 Again, we see large outliers in the `mktval` variable.
 
-Since all distributions are heavily skewed with outliers to the far right, we perform a logarithmic transformation. For the `profits` variable, we also have to consider omitting all values $<= 0$ in the transformation and then analysing those values seperately.
+Since all distributions are heavily skewed with outliers to the far right, we perform a logarithmic transformation. For the `profits` variable, we also have to consider omitting all values $<= 0$ in the transformation.
 
 First we check how many profits values actually are zero or negative.
 
@@ -149,7 +149,7 @@ The transformed `salary` and `profits` variables resemble the normal distributio
 
 ## Salary, Market Value and Profits
 
-Let's first check out the linear correlation between the salary and the market value and profits variable. When profits is involved, we only check for positive profits. We do this, so that we can better compare the correlation coefficient with its transformed correspondence.
+First, we look at the linear correlations between `salary` and `profits` and `salary` and `mktval`. To better compare the two correlation coefficients, we'll only look at positive profit values. Then, we look at a scatterplot matrix for these three variables.
 
 ```{r}
 pos_profits = CEO$profits > 0
@@ -167,11 +167,9 @@ scatterplotMatrix( ~ salary + profits + mktval, data = CEO,
                    main = "Scatterplot Matrix for original data")
 ```
 
-There is a moderate positive linear correlation between salary and market value as well as salary and profits.
+There is a moderate positive linear correlation between both `salary` and both `profits` and `mktval`. We also notice a strong linear correlatio between `profits` and `mktval`.
 
-Market value and profits have a very strong linear correlation (> 1).
-
-Let's have a look at the correlation after transformation. 
+Next we'll look at the correlations between the log-transformed variables and their scatterplot matrix. 
 
 ```{r}
 cor(CEO$log_profits, CEO$log_salary, use = "complete.obs")
@@ -187,28 +185,25 @@ scatterplotMatrix( ~ log_salary + log_profits + log_mktval, data = CEO,
                    main = "Scatterplot Matrix for transformed data")
 ```
 
-After transformation, we can see a stronger relationship between salary and profits as well as market value and profits. The correlation for either pair is close to 0.5 (previously close to 0.4). Due to the nonlinearity of the relationship, the calculated correlation on the original (non transformed) variables, underestimates the actual relationship.
+We can see a stronger relationship between `salary` and `profits` as well as `salary` and `mktval` with the correlation increasing from `r cor(CEO$profits[pos_profits], CEO$salary[pos_profits], use = "complete.obs")` to `r cor(CEO$log_profits, CEO$log_salary, use = "complete.obs")` and `r cor(CEO$mktval, CEO$salary, use = "complete.obs")` to `r cor(CEO$log_mktval, CEO$log_salary, use = "complete.obs")`, respectively. Due to the nonlinearity of the relationship, the calculated correlation on the original (non-transformed) variables underestimates the actual relationship.
 
-Let's now take a look at the Scatterplot Matrix for the key variables under examination. Note that all data points, where profits is negative, are omitted.
+<!-- Let's now take a look at the scatterplot matrix for the key variables under examination. Note that all data points, where profits is negative, are omitted. -->
 
-We can see a correlation between 
 
-Does it make sense to even look at those ten data points?
-
-```{r}
-scatterplotMatrix( ~ salary[profits <= 0] + profits[profits <= 0] + mktval[profits <= 0], 
-                   data = CEO, 
- #                reg.line="" , 
-                   smoother="",
-                   diagonal = "histogram", 
-                   main = "Scatterplot Matrix for negative profit values")
-```
+<!-- ```{r} -->
+<!-- scatterplotMatrix( ~ salary[profits <= 0] + profits[profits <= 0] + mktval[profits <= 0],  -->
+<!--                    data = CEO,  -->
+<!--  #                reg.line="" ,  -->
+<!--                    smoother="", -->
+<!--                    diagonal = "histogram",  -->
+<!--                    main = "Scatterplot Matrix for negative profit values") -->
+<!-- ``` -->
 
 # Further considerations
 
-## Weighted profits / market value
+## CEO Tenure
 
-Maybe it would be better to weight the profits and market value variables with the time the CEO has been CEO respectively with the company. This way we limit the effect of predecessors policies. 
+To limit the effect of the performance of past CEOs on company performance, we consider weighting `profits` and `mktval` based on CEO tenure (`ceoten`) and calculating the correlations.
 
 ```{r}
 CEO$weighted_profits = CEO$profits * CEO$ceoten
@@ -219,7 +214,10 @@ cor(CEO$salary, CEO$weighted_mktval, use = "complete.obs")
 cor(CEO$weighted_profits, CEO$weighted_mktval, use = "complete.obs")
 ```
 
-Since there are comten/ceoten values that are zero, some of the weighted values are now zero. We replace those with NAs before logarithmic transformation, to avoid infintive values. These values will be omitted and this might be justified by arguing, that CEOs who have been with the company for less than a year, do not have a significant effect on the companies profit or market value yet. 
+
+Since there are `ceoten` values that are zero, some of the weighted values are now zero. We replace those with NAs before logarithmic transformation. We can justify omitting those values by assuming that CEOs who have been leading a company for less than a year do not yet have a significant effect on the company's performance.  
+
+We perform log transforms on our weighted variables, recalculate correlations, and draw histograms for both.
 
 
 ```{r}
@@ -235,50 +233,52 @@ cor(CEO$log_weighted_profits, CEO$log_weighted_mktval, use = "complete.obs")
 ```
 
 ```{r}
-hist(CEO$log_weighted_profits)
-hist(CEO$log_weighted_mktval)
+hist(CEO$log_weighted_profits, main="Log of Weighted Profits", xlab = NULL)
+hist(CEO$log_weighted_mktval, main="Log of Weighted Market Value", xlab = NULL)
 ```
 
-Let's draw a scatterplot matrix for those weighted variables.
+<!-- Let's draw a scatterplot matrix for those weighted variables. -->
+
+<!-- ```{r} -->
+<!-- scatterplotMatrix( ~ log_salary + log_weighted_profits + log_weighted_mktval,  -->
+<!--                    data = CEO,  -->
+<!-- #                 reg.line="" ,  -->
+<!--                    smoother="", -->
+<!--                    diagonal = "histogram",  -->
+<!--                    main = "Scatterplot Matrix for weighted profits / market value") -->
+<!-- ``` -->
+
+The correlation between `log_salary` and `log_weighted_profits` and `log_salary` and `log_weighted_mktval` aren't notably different from their unweighted counterparts. Thus, the number of years an individual has served as CEO doesn't greatly impact our analysis.
+
+However, the correlation between `log_weighted_profits` and `log_weighted_mktval` is stronger than between the unweighted versions. This correlation could indicate that a longer tenured CEO's achieved profit has a larger effect on the company's market value.
+
+## CEO Age
+
+We perform a brief analysis of the impact of CEO age on our key variables. 
 
 ```{r}
-scatterplotMatrix( ~ log_salary + log_weighted_profits + log_weighted_mktval, 
-                   data = CEO, 
-#                 reg.line="" , 
-                   smoother="",
-                   diagonal = "histogram", 
-                   main = "Scatterplot Matrix for weighted profits / market value")
+hist(CEO$age, main = "CEO Age", xlab = NULL)
 ```
 
-The correlation between log_salary and log_weighted_profits respectively log_salary and log_weighted_mktval don't seem stronger than their unweighted counterparts. 
+There is no significant skew in the age variable.
 
-(However, the correlation between log_weighted_profits and log_weighted_mktval look stronger than between the unweighted versions. This possibly accounts for the intuitive assumption, that a CEOs achieved profit has a higher effect on the market value, the longer he has been CEO.)
-
-## Age factor
-
-```{r}
-hist(CEO$age)
-```
-
-There is new significant skew in the age variable.
-
-Let's check if there is a correlation between age and salary. It seems natural to assume that their might be a correlation between those two variables.
+Next, we check whether there is a correlation between age and salary.
 
 ```{r}
 cor(CEO$age, CEO$salary)
 ```
 
-
-
-There seems to be no significant linear relationship between age and salary. This can also be seen in the scatterplot.
+There is no notable linear relationship between age and salary. This can also be seen in the scatterplot.
 
 ```{r}
 plot(CEO$age, CEO$salary)
 ```
 
-## Education factor
+Thus, we don't expect age to impact our primary analysis.
 
-Let's examine, if there is a linear correlation between salary and education.
+## CEO Education
+
+Let's examine if there is a linear correlation between salary and education.
 
 Let's add both education variables to create one variable that indicates the CEOs overall education and check the correlation (does checking the correlation really make sense here?)
 
